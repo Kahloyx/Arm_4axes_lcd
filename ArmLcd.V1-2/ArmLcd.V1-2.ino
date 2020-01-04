@@ -1,5 +1,14 @@
+/* WIP by kahloyx kahloyx@gmail.com 2020 
+    Works with an arduino uno, 16x2 LCD non-i2c at the moment*/
+
 #include <VarSpeedServo.h>
 #include <LiquidCrystal.h>
+
+VarSpeedServo servo1;   //Definition of 4 servos in the LibVarSpeedServo
+VarSpeedServo servo2;
+VarSpeedServo servo3;
+VarSpeedServo servo4;
+
 int RS = 7;
 int E = 5;
 int D4 = 3;
@@ -9,40 +18,36 @@ int D7 = 0;
 int timer = 1500;
 int L3 = A4;
 bool page = true;
+
 LiquidCrystal lcd (RS, E, D4, D5, D6, D7); //(rs,e,d4,d5,d6,d7)
 
-VarSpeedServo servo1;   //four servos defined
-VarSpeedServo servo2;
-VarSpeedServo servo3;
-VarSpeedServo servo4;
+int axeX1 = 0;        //Def of horizontal axe left joystick pin to read
+int axeY1 = 1;        //Def of vertical axe left joystick pin to read
+int axeX2 = 2;        //Def of horizontal axe right joystick pin to read
+int axeY2 = 3;        //Def of vertical axe right joystick pin to read
 
-int potpin1 = 1;        //Définir le port A0 d'entrée horizontale du joystick gauche
-int potpin2 = 0;        //Définissez le joystick gauche pour entrer le port A1 dans le sens vertical
-int potpin3 = 2;        //Définir le port d'entrée droite du joystick horizontal A2
-int potpin4 = 3;        //Définissez le joystick droit pour entrer le port A3 verticalement.
+int X1;                   //Buffer for sticks values
+int Y1;
+int X2;
+int Y2;
 
-int val1;
-int val2;
-int val3;
-int val4;
-
-static int base = 70;         //Définit l'angle initial du servo de base à 70
-static int minibras = 110;    //Définir l'angle initial du servo de base à 110
-static int bras = 100;        //Définir l'angle initial du grand appareil à 100
-static int pince = 80;        //Définir l'angle initial du servo de patte à 80
+static int base = 70;
+static int minibras = 110;
+static int bras = 100;
+static int pince = 80;
 
 void setup()
 {
-  //pinMode(L3, INPUT);
-  lcd.begin(16, 2);                                             //déclaration de l'écran LCD
+  pinMode(L3, INPUT);
+  lcd.begin(16, 2);                                             //Necessary LCD init
   lcd.clear();
   lcd.print("Initialisating..");
-  servo1.attach(11);                                            //definition de l'attache de chaque servo sur les bornes 11 ect
+  lcd.print("Please wait.....");
+  servo1.attach(11);                                            //Physical declaration of the 45 servos to work with
   servo2.attach(10);
   servo3.attach(9);
   servo4.attach(6);
   lcd.setCursor(0, 1);
-  lcd.print("Please wait.....");
   servo1.write(70);                                             //base
   servo2.write(110);                                            //bras
   servo3.write(100);                                            //mini bras
@@ -52,9 +57,8 @@ void setup()
 }
 void loop()
 {
-  /////LCD Headquarters///////
-  pinMode(L3, INPUT);
-  boolean screencfg = analogRead(L3);
+  ///////   LCD  ///////
+
   if (page == 0)
   {
     lcd.clear();
@@ -79,19 +83,21 @@ void loop()
     lcd.print(pince);
     delay(88);
   }
-  if (screencfg == 0)
+  //////////Switch lcd page 1>2 2>1//////////
+  boolean swpage = analogRead(L3);
+  if (swpage == false)
   {
-    if ( page == 0)
-    page = 1;
+    if ( page == false)
+      page = 1;
     else
-    page = 0;
+      page = 0;
     delay(500);
   }
 
   /////Contrôle de base///////
-  val1 = analogRead(potpin1);                                   //de 10 à 170
+  X1 = analogRead(axeX1);
 
-  if (val1 < 100)
+  if (X1 < 100)
   {
     base = base - 1;
     if (base <= 10)
@@ -100,7 +106,7 @@ void loop()
     }
     servo1.write(base); delay(50);
   }
-  if (val1 > 900)
+  if (X1 > 900)
   {
     base = base + 1;
     if (base >= 170)
@@ -111,9 +117,9 @@ void loop()
   }
 
   //////Bras de commande de direction///////
-  val2 = analogRead(potpin2);     //10 à 170
+  Y1 = analogRead(axeY1);
 
-  if (val2 > 900)
+  if (Y1 > 900)
   {
     minibras = minibras - 1;
     if (minibras <= 10)
@@ -122,7 +128,7 @@ void loop()
     }
     servo2.write(minibras); delay(50);
   }
-  if (val2 < 100)
+  if (Y1 < 100)
   {
     minibras = minibras + 1;
     if (minibras >= 170)
@@ -133,10 +139,10 @@ void loop()
   }
 
   //////Commande de direction à gros bras///////
-  val3 = analogRead(potpin3);              //10 to170
+  X2 = analogRead(axeX2);
 
 
-  if (val3 < 100)
+  if (X2 < 100)
   {
     bras = bras - 1;
     if (bras <= 10)
@@ -147,7 +153,7 @@ void loop()
 
     delay(50);
   }
-  if (val3 > 900)
+  if (X2 > 900)
   {
     bras = bras + 1;
     if (bras >= 170)
@@ -159,10 +165,10 @@ void loop()
     delay(50);
   }
 
-  //////Pince///////
-  val4 = analogRead(potpin4);               //80 to 130
+  //////Hook///////
+  Y2 = analogRead(axeY2);
 
-  if (val4 < 100)
+  if (Y2 < 100)
   {
     pince = pince - 1;
     if (pince <= 80)
@@ -174,7 +180,7 @@ void loop()
 
     delay(50);
   }
-  if (val4 > 900)
+  if (Y2 > 900)
   {
     pince = pince + 1;
     if (pince >= 130)
